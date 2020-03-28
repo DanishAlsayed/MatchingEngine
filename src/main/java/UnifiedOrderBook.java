@@ -1,13 +1,19 @@
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UnifiedOrderBook {
     private final Map<Integer, Order> lookBook;
     private final Map<Double, Book> orderBook;
+    private PriorityQueue<Double> minPrices;
+    private PriorityQueue<Double> maxPrices;
 
     public UnifiedOrderBook() {
         lookBook = new ConcurrentHashMap<>();
         orderBook = new ConcurrentHashMap<Double, Book>();
+        minPrices = new PriorityQueue<Double>();
+        //TODO: verify
+        maxPrices = new PriorityQueue<Double>((o1, o2) -> -Double.compare(o1, o2));
     }
 
     public boolean fillAndInsert(Order order) {
@@ -15,11 +21,20 @@ public class UnifiedOrderBook {
             return false;
         }
         Book queues = orderBook.get(order.getPrice());
+        //TODO: refactor these if/else blocks
         if (queues != null) {
-            orderBook.get(order.getPrice()).fillAndInsert(order, lookBook);
+            if (order.isSideBuy()) {
+                queues.fillAndInsert(order, lookBook, maxPrices);
+            } else {
+                queues.fillAndInsert(order, lookBook, minPrices);
+            }
         } else {
             queues = new Book();
-            queues.fillAndInsert(order, lookBook);
+            if (order.isSideBuy()) {
+                queues.fillAndInsert(order, lookBook, maxPrices);
+            } else {
+                queues.fillAndInsert(order, lookBook, minPrices);
+            }
             orderBook.put(order.getPrice(), queues);
         }
         return true;
@@ -32,7 +47,12 @@ public class UnifiedOrderBook {
         }
         Book queues = orderBook.get(order.getPrice());
         if (queues != null) {
-            return queues.remove(order, lookBook);
+            if (order.isSideBuy()) {
+                queues.remove(order, lookBook, maxPrices);
+            } else {
+                queues.remove(order, lookBook, minPrices);
+            }
+            return true;
         }
         return false;
     }
@@ -68,5 +88,13 @@ public class UnifiedOrderBook {
 
     public Map<Integer, Order> getLookBook() {
         return lookBook;
+    }
+
+    public PriorityQueue<Double> getMinPrices() {
+        return minPrices;
+    }
+
+    public PriorityQueue<Double> getMaxPrices() {
+        return maxPrices;
     }
 }

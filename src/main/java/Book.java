@@ -1,5 +1,6 @@
 import java.util.Iterator;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,13 +28,14 @@ public class Book {
         }
     }
 
-    public boolean fillAndInsert(Order order, Map<Integer, Order> lookBook) {
+    public boolean fillAndInsert(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         lock.lock();
         boolean result;
         try {
-            result = fill(order, lookBook);
+            result = fill(order, lookBook, priorityQueue);
             if (!result) {
                 insert(order, lookBook);
+                priorityQueue.add(order.getPrice());
             }
         } finally {
             lock.unlock();
@@ -67,7 +69,7 @@ public class Book {
         return true;
     }
 
-    public boolean remove(Order order, Map<Integer, Order> lookBook) {
+    public boolean remove(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         lock.lock();
         boolean result = false;
         try {
@@ -75,9 +77,11 @@ public class Book {
             int id = order.getId();
             while (it.hasNext()) {
                 Order restingOrder = it.next();
+                double price = restingOrder.getPrice();
                 if (restingOrder.getId() == id) {
                     it.remove();
                     lookBook.remove(id);
+                    priorityQueue.remove(price);
                     result = true;
                     break;
                 }
@@ -98,7 +102,7 @@ public class Book {
         }
     }
 
-    private boolean fill(Order order, Map<Integer, Order> lookBook) {
+    private boolean fill(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         boolean result = false;
         Iterator<Order> it = getSideQueue(!order.isSideBuy()).iterator();
         while (it.hasNext()) {
@@ -115,10 +119,12 @@ public class Book {
                 break;
             } else if (diff > 0) {
                 order.setQuantity(diff);
+                priorityQueue.remove(restingOrder.getPrice());
                 it.remove();
                 lookBook.remove(restingOrder.getId());
             } else {
                 order.setQuantity(0);
+                priorityQueue.remove(restingOrder.getPrice());
                 it.remove();
                 lookBook.remove(restingOrder.getId());
                 result = true;

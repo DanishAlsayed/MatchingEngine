@@ -76,12 +76,32 @@ public class UnifiedOrderBookTest {
         assertTrue(orderBook.fillAndInsert(order2));
         assertTrue(orderBook.fillAndInsert(order3));
         printOrderBook();
-        Amend amend = new Amend(order1.getId(),9.9,Amend.PRICE_AMEND);
+        Amend amend = new Amend(order1.getId(), 9.9, Amend.PRICE_AMEND);
         assertTrue(orderBook.amend(amend));
-        amend = new Amend(order3.getId(),90,Amend.QUANTITY_AMEND);
+        amend = new Amend(order3.getId(), 90, Amend.QUANTITY_AMEND);
         assertTrue(orderBook.amend(amend));
-        amend = new Amend(order2.getId(),110,Amend.QUANTITY_AMEND);
+        amend = new Amend(order2.getId(), 110, Amend.QUANTITY_AMEND);
         assertTrue(orderBook.amend(amend));
+    }
+
+    @Test
+    public void priceHeapsInsertions() {
+        Order order1 = new Order(1, 100, 10.1, false);
+        Order order2 = new Order(2, 100, 10.2, true);
+        Order order3 = new Order(3, 100, 10.3, true);
+        Order order4 = new Order(4, 275, 10.4, true);
+        Order order5 = new Order(5, 100, 10.5, false);
+        Order order6 = new Order(6, 100, 10.6, true);
+        Order order7 = new Order(7, 100, 10.7, true);
+        Order order8 = new Order(8, 275, 10.7, true);
+        assertTrue(orderBook.fillAndInsert(order1));
+        assertTrue(orderBook.fillAndInsert(order2));
+        assertTrue(orderBook.fillAndInsert(order3));
+        assertTrue(orderBook.fillAndInsert(order4));
+        assertTrue(orderBook.fillAndInsert(order5));
+        assertTrue(orderBook.fillAndInsert(order6));
+        assertTrue(orderBook.fillAndInsert(order7));
+        assertTrue(orderBook.fillAndInsert(order8));
     }
 
     private void printOrderBook() {
@@ -110,6 +130,19 @@ public class UnifiedOrderBookTest {
             Map.Entry pair = (Map.Entry) it.next();
             System.out.println(pair.getKey() + " = " + pair.getValue());
         }
+
+        int size = orderBook.getMinPrices().size();
+        System.out.println("\nMinHeap: size: " + size);
+        for (int i = 0; i < size; i++) {
+            System.out.print(orderBook.getMinPrices().poll() + " ");
+        }
+
+        size = orderBook.getMaxPrices().size();
+        System.out.println("\nMaxHeap: size: " + size);
+        for (int i = 0; i < size; i++) {
+            System.out.print(orderBook.getMaxPrices().poll() + " ");
+        }
+
     }
 
 }

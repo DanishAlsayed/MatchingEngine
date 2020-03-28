@@ -5,7 +5,9 @@ public class Order {
     private int quantity;
     private double price;
     private boolean sideBuy;
+    private boolean mktOrder;
 
+    //TODO: add support for market orders, price will be -1
     public Order(int id, int quantity, double price, boolean sideBuy) {
         validate(id, quantity, price);
         this.id = id;
