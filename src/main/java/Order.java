@@ -48,7 +48,7 @@ public class Order {
 
     private void validate(int id, int quantity, double price) {
         //TODO: order id can be -1 for market data stream, for id check for -1 OR > 0
-        if (id < 0 || quantity < 0 || price < 0.0)
+        if (id <= 0 || quantity <= 0 || price <= 0.0)
             throw new IllegalArgumentException("Order id, quantity and price must all be positive.");
     }
 
