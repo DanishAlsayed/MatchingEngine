@@ -124,6 +124,8 @@ public class UnifiedOrderBookTest {
         assertTrue(orderBook.fillAndInsert(order6));
         assertTrue(orderBook.fillAndInsert(order7));
         assertTrue(orderBook.fillAndInsert(order8));
+        assertEquals(6, orderBook.getMaxPrices().size());
+        assertEquals(2, orderBook.getMinPrices().size());
     }
 
 }

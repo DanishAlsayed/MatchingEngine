@@ -54,7 +54,6 @@ import java.util.Objects;
 
     }
 
-    //TODO: consider comparing only based on id?
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

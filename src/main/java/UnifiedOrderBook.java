@@ -1,16 +1,18 @@
+import com.google.common.collect.HashMultimap;
+
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
- class UnifiedOrderBook {
+class UnifiedOrderBook {
     private final Map<Integer, Order> lookBook;
     private final Map<Double, Book> orderBook;
     private PriorityQueue<Double> minPrices;
     private PriorityQueue<Double> maxPrices;
     private ReentrantLock lock;
 
-     UnifiedOrderBook() {
+    UnifiedOrderBook() {
         lookBook = new ConcurrentHashMap<>();
         orderBook = new ConcurrentHashMap<>();
         minPrices = new PriorityQueue<>();
@@ -18,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
         lock = new ReentrantLock(true);
     }
 
-     boolean fillAndInsert(Order order) {
+    boolean fillAndInsert(Order order) {
         lock.lock();
         try {
             int id = order.getId();
@@ -32,20 +34,11 @@ import java.util.concurrent.locks.ReentrantLock;
             }
 
             Book queues = orderBook.get(order.getPrice());
-            //TODO: refactor these if/else blocks
             if (queues != null) {
-                if (order.isSideBuy()) {
-                    queues.fillAndInsert(order, lookBook, maxPrices);
-                } else {
-                    queues.fillAndInsert(order, lookBook, minPrices);
-                }
+                queues.fillAndInsert(order, lookBook, maxPrices, minPrices);
             } else if (!order.isMktOrder()) {
                 queues = new Book();
-                if (order.isSideBuy()) {
-                    queues.fillAndInsert(order, lookBook, maxPrices);
-                } else {
-                    queues.fillAndInsert(order, lookBook, minPrices);
-                }
+                queues.fillAndInsert(order, lookBook, maxPrices, minPrices);
                 orderBook.put(order.getPrice(), queues);
             }
             return true;
@@ -66,14 +59,14 @@ import java.util.concurrent.locks.ReentrantLock;
                 order.setPrice(maxPrices.poll());
                 return true;
             }
-            System.out.println("No corresponding limit order to match " + order + " against.");
+            System.out.println("No corresponding limit order to match " + order + " against. This order will be not be entertained.");
             return false;
         } finally {
             lock.unlock();
         }
     }
 
-     boolean cancel(int id) {
+    boolean cancel(int id) {
         lock.lock();
         try {
             Order order = getOrder(id);
@@ -96,7 +89,7 @@ import java.util.concurrent.locks.ReentrantLock;
         }
     }
 
-     boolean amend(Amend amend) {
+    boolean amend(Amend amend) {
         lock.lock();
         try {
             int id = amend.getId();
@@ -118,7 +111,7 @@ import java.util.concurrent.locks.ReentrantLock;
         }
     }
 
-     void clear() {
+    void clear() {
         lock.lock();
         try {
             orderBook.clear();
@@ -132,19 +125,19 @@ import java.util.concurrent.locks.ReentrantLock;
         return lookBook.get(id);
     }
 
-     Map<Double, Book> getOrderBook() {
+    Map<Double, Book> getOrderBook() {
         return orderBook;
     }
 
-     Map<Integer, Order> getLookBook() {
+    Map<Integer, Order> getLookBook() {
         return lookBook;
     }
 
-     PriorityQueue<Double> getMinPrices() {
+    PriorityQueue<Double> getMinPrices() {
         return minPrices;
     }
 
-     PriorityQueue<Double> getMaxPrices() {
+    PriorityQueue<Double> getMaxPrices() {
         return maxPrices;
     }
 }

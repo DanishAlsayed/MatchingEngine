@@ -3,20 +3,20 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
- class Book {
+class Book {
     private ConcurrentLinkedQueue<Order> buyQueue;
     private ConcurrentLinkedQueue<Order> sellQueue;
 
-     Book() {
+    Book() {
         buyQueue = new ConcurrentLinkedQueue<>();
         sellQueue = new ConcurrentLinkedQueue<>();
     }
 
-     int bookSize(boolean sideBuy) {
+    int bookSize(boolean sideBuy) {
         return sideBuy ? buyQueue.size() : sellQueue.size();
     }
 
-     void printBook(boolean sideBuy) {
+    void printBook(boolean sideBuy) {
         Iterator<Order> it = getSideQueue(sideBuy).iterator();
         while (it.hasNext()) {
             Order order = it.next();
@@ -24,17 +24,20 @@ import java.util.concurrent.ConcurrentLinkedQueue;
         }
     }
 
-     void fillAndInsert(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
+    void fillAndInsert(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> maxPrices, PriorityQueue<Double> minPrices) {
         boolean result;
-        result = fill(order, lookBook, priorityQueue);
+        boolean sideBuy = order.isSideBuy();
+        result = fill(order, lookBook, sideBuy ? minPrices : maxPrices);
         if (!result && !order.isMktOrder()) {
             insert(order, lookBook);
-            priorityQueue.add(order.getPrice());
+            if (sideBuy)
+                maxPrices.add(order.getPrice());
+            else
+                minPrices.add(order.getPrice());
         }
+    }
 
-     }
-
-     boolean amendQuantity(Amend amend, Order order, Map<Integer, Order> lookBook) {
+    boolean amendQuantity(Amend amend, Order order, Map<Integer, Order> lookBook) {
 
         Iterator<Order> it = getSideQueue(order.isSideBuy()).iterator();
         while (it.hasNext()) {
@@ -43,7 +46,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
                 if (amend.getQuantity() < restingOrder.getQuantity()) {
                     restingOrder.setQuantity(amend.getQuantity());
                     System.out.println(restingOrder + " quantity-down amended");
-                    //TODO: how is lookbook getting updated implicitly here?
+                    lookBook.replace(restingOrder.getId(), restingOrder);
                 } else {
                     Order newOrder = new Order(order.getId(), amend.getQuantity(), order.getPrice(), order.isSideBuy());
                     it.remove();
@@ -58,7 +61,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
         return true;
     }
 
-     void remove(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
+    void remove(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         Iterator<Order> it = getSideQueue(order.isSideBuy()).iterator();
         int id = order.getId();
         while (it.hasNext()) {
@@ -72,7 +75,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
                 break;
             }
         }
-     }
+    }
 
     private boolean fill(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         boolean result = false;

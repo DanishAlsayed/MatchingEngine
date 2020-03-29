@@ -57,7 +57,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
                 Order restingOrder = it.next();
                 if (restingOrder.getId() == id) {
                     it.remove();
-                    //TODO: note that if queue size is 0 i.e. not more orders at that price level, the price will still exist in the book
                     lookBook.remove(id);
                     return true;
                 }

@@ -12,7 +12,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 public class OrderBookTest {
-    OrderBook orderBook;
+    private OrderBook orderBook;
 
     @Before
     public void setup() {
