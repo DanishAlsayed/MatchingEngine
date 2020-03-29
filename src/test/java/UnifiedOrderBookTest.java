@@ -2,8 +2,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Iterator;
-import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -11,7 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 public class UnifiedOrderBookTest {
-    UnifiedOrderBook orderBook;
+    private UnifiedOrderBook orderBook;
 
     @Before
     public void setup() {
@@ -20,7 +18,7 @@ public class UnifiedOrderBookTest {
 
     @After
     public void print() {
-        printOrderBook();
+        TestUtil.printOrderBook(orderBook);
         orderBook.clear();
     }
 
@@ -59,7 +57,7 @@ public class UnifiedOrderBookTest {
         assertTrue(orderBook.fillAndInsert(order1));
         assertTrue(orderBook.fillAndInsert(order2));
         assertTrue(orderBook.fillAndInsert(order3));
-        printOrderBook();
+        TestUtil.printOrderBook(orderBook);
         assertEquals(orderBook.getOrderBook().get(10.1).bookSize(false), 3);
         assertNull(orderBook.getOrderBook().get(10.0));
         assertTrue(orderBook.fillAndInsert(order4));
@@ -75,13 +73,37 @@ public class UnifiedOrderBookTest {
         assertTrue(orderBook.fillAndInsert(order1));
         assertTrue(orderBook.fillAndInsert(order2));
         assertTrue(orderBook.fillAndInsert(order3));
-        printOrderBook();
+        TestUtil.printOrderBook(orderBook);
         Amend amend = new Amend(order1.getId(), 9.9, Amend.PRICE_AMEND);
         assertTrue(orderBook.amend(amend));
         amend = new Amend(order3.getId(), 90, Amend.QUANTITY_AMEND);
         assertTrue(orderBook.amend(amend));
         amend = new Amend(order2.getId(), 110, Amend.QUANTITY_AMEND);
         assertTrue(orderBook.amend(amend));
+    }
+
+    @Test
+    public void marketOrder() {
+        Order mktOrder = new Order(9,125,0,false);
+        assertFalse(orderBook.fillAndInsert(mktOrder));
+        Order order1 = new Order(1, 100, 10.1, false);
+        assertFalse(orderBook.fillAndInsert(mktOrder));
+        Order order2 = new Order(2, 100, 10.2, true);
+        Order order3 = new Order(3, 100, 10.3, true);
+        Order order4 = new Order(4, 250, 10.4, true);
+        Order order5 = new Order(5, 100, 10.5, false);
+        Order order6 = new Order(6, 100, 10.6, true);
+        Order order7 = new Order(7, 100, 10.7, true);
+        Order order8 = new Order(8, 275, 10.7, true);
+        assertTrue(orderBook.fillAndInsert(order1));
+        assertTrue(orderBook.fillAndInsert(order2));
+        assertTrue(orderBook.fillAndInsert(order3));
+        assertTrue(orderBook.fillAndInsert(order4));
+        assertTrue(orderBook.fillAndInsert(order5));
+        assertTrue(orderBook.fillAndInsert(order6));
+        assertTrue(orderBook.fillAndInsert(order7));
+        assertTrue(orderBook.fillAndInsert(order8));
+        assertTrue(orderBook.fillAndInsert(mktOrder));
     }
 
     @Test
@@ -102,47 +124,6 @@ public class UnifiedOrderBookTest {
         assertTrue(orderBook.fillAndInsert(order6));
         assertTrue(orderBook.fillAndInsert(order7));
         assertTrue(orderBook.fillAndInsert(order8));
-    }
-
-    private void printOrderBook() {
-        System.out.println("---ORDER BOOK---");
-        Iterator it = orderBook.getOrderBook().entrySet().iterator();
-        System.out.println("Buy Book:");
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            System.out.println(pair.getKey());
-            Book queue = (Book) pair.getValue();
-            queue.printBook(true);
-        }
-
-        System.out.println("\nSell Book:");
-        it = orderBook.getOrderBook().entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            System.out.println(pair.getKey());
-            Book queue = (Book) pair.getValue();
-            queue.printBook(false);
-        }
-
-        System.out.println("\nLook Book:");
-        it = orderBook.getLookBook().entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            System.out.println(pair.getKey() + " = " + pair.getValue());
-        }
-
-        int size = orderBook.getMinPrices().size();
-        System.out.println("\nMinHeap: size: " + size);
-        for (int i = 0; i < size; i++) {
-            System.out.print(orderBook.getMinPrices().poll() + " ");
-        }
-
-        size = orderBook.getMaxPrices().size();
-        System.out.println("\nMaxHeap: size: " + size);
-        for (int i = 0; i < size; i++) {
-            System.out.print(orderBook.getMaxPrices().poll() + " ");
-        }
-
     }
 
 }

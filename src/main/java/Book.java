@@ -2,25 +2,21 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class Book {
+ class Book {
     private ConcurrentLinkedQueue<Order> buyQueue;
     private ConcurrentLinkedQueue<Order> sellQueue;
-    private ReentrantLock lock;
 
-    public Book() {
-        buyQueue = new ConcurrentLinkedQueue<Order>();
-        sellQueue = new ConcurrentLinkedQueue<Order>();
-        //Fairness policy
-        lock = new ReentrantLock(true);
+     Book() {
+        buyQueue = new ConcurrentLinkedQueue<>();
+        sellQueue = new ConcurrentLinkedQueue<>();
     }
 
-    public int bookSize(boolean sideBuy) {
+     int bookSize(boolean sideBuy) {
         return sideBuy ? buyQueue.size() : sellQueue.size();
     }
 
-    public void printBook(boolean sideBuy) {
+     void printBook(boolean sideBuy) {
         Iterator<Order> it = getSideQueue(sideBuy).iterator();
         while (it.hasNext()) {
             Order order = it.next();
@@ -28,82 +24,59 @@ public class Book {
         }
     }
 
-    public boolean fillAndInsert(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
-        lock.lock();
+     void fillAndInsert(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         boolean result;
-        try {
-            result = fill(order, lookBook, priorityQueue);
-            if (!result) {
-                insert(order, lookBook);
-                priorityQueue.add(order.getPrice());
-            }
-        } finally {
-            lock.unlock();
+        result = fill(order, lookBook, priorityQueue);
+        if (!result && !order.isMktOrder()) {
+            insert(order, lookBook);
+            priorityQueue.add(order.getPrice());
         }
-        return result;
-    }
 
-    public boolean amendQuantity(Amend amend, Order order, Map<Integer, Order> lookBook) {
-        lock.lock();
-        try {
-            Iterator<Order> it = getSideQueue(order.isSideBuy()).iterator();
-            while (it.hasNext()) {
-                Order restingOrder = it.next();
-                if (restingOrder.getId() == amend.getId()) {
-                    if (amend.getQuantity() < restingOrder.getQuantity()) {
-                        restingOrder.setQuantity(amend.getQuantity());
-                        //TODO: how is lookbook getting updated implicitly here?
-                    } else {
-                        Order newOrder = new Order(order.getId(), amend.getQuantity(), order.getPrice(), order.isSideBuy());
-                        it.remove();
-                        lookBook.remove(amend.getId());
-                        //Queue priority is lost with a quantity-up amend
-                        insert(newOrder, lookBook);
-                    }
-                    break;
+     }
+
+     boolean amendQuantity(Amend amend, Order order, Map<Integer, Order> lookBook) {
+
+        Iterator<Order> it = getSideQueue(order.isSideBuy()).iterator();
+        while (it.hasNext()) {
+            Order restingOrder = it.next();
+            if (restingOrder.getId() == amend.getId()) {
+                if (amend.getQuantity() < restingOrder.getQuantity()) {
+                    restingOrder.setQuantity(amend.getQuantity());
+                    System.out.println(restingOrder + " quantity-down amended");
+                    //TODO: how is lookbook getting updated implicitly here?
+                } else {
+                    Order newOrder = new Order(order.getId(), amend.getQuantity(), order.getPrice(), order.isSideBuy());
+                    it.remove();
+                    lookBook.remove(amend.getId());
+                    //Queue priority is lost with a quantity-up amend
+                    insert(newOrder, lookBook);
                 }
+                break;
             }
-        } finally {
-            lock.unlock();
         }
+
         return true;
     }
 
-    public boolean remove(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
-        lock.lock();
-        boolean result = false;
-        try {
-            Iterator<Order> it = getSideQueue(order.isSideBuy()).iterator();
-            int id = order.getId();
-            while (it.hasNext()) {
-                Order restingOrder = it.next();
-                double price = restingOrder.getPrice();
-                if (restingOrder.getId() == id) {
-                    it.remove();
-                    lookBook.remove(id);
-                    priorityQueue.remove(price);
-                    result = true;
-                    break;
-                }
+     void remove(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
+        Iterator<Order> it = getSideQueue(order.isSideBuy()).iterator();
+        int id = order.getId();
+        while (it.hasNext()) {
+            Order restingOrder = it.next();
+            double price = restingOrder.getPrice();
+            if (restingOrder.getId() == id) {
+                System.out.println(restingOrder + " cancelled");
+                it.remove();
+                lookBook.remove(id);
+                priorityQueue.remove(price);
+                break;
             }
-        } finally {
-            lock.unlock();
         }
-        return result;
-    }
-
-    public void clear() {
-        lock.lock();
-        try {
-            buyQueue.clear();
-            sellQueue.clear();
-        } finally {
-            lock.unlock();
-        }
-    }
+     }
 
     private boolean fill(Order order, Map<Integer, Order> lookBook, PriorityQueue<Double> priorityQueue) {
         boolean result = false;
+        boolean partialFill = false;
         Iterator<Order> it = getSideQueue(!order.isSideBuy()).iterator();
         while (it.hasNext()) {
             Order restingOrder = it.next();
@@ -112,18 +85,24 @@ public class Book {
             int diff = orderQty - restingQty;
             if (diff < 0) {
                 order.setQuantity(0);
-                int newQty = restingQty + diff;
+                int newQty = diff * -1;
                 restingOrder.setQuantity(newQty);
                 lookBook.get(restingOrder.getId()).setQuantity(newQty);
                 result = true;
+                System.out.println("Order: " + order + " fully filled");
+                System.out.println("restingOrder: " + restingOrder + " partially filled, quantity left:" + restingOrder.getQuantity());
                 break;
             } else if (diff > 0) {
                 order.setQuantity(diff);
+                System.out.println("restingOrder: " + restingOrder + " fully filled");
+                System.out.println("order: " + order + " partially filled, quantity left:" + order.getQuantity());
                 priorityQueue.remove(restingOrder.getPrice());
                 it.remove();
                 lookBook.remove(restingOrder.getId());
+                partialFill = true;
             } else {
                 order.setQuantity(0);
+                System.out.println("orders: " + restingOrder + " and " + order + " fully filled");
                 priorityQueue.remove(restingOrder.getPrice());
                 it.remove();
                 lookBook.remove(restingOrder.getId());
@@ -132,13 +111,17 @@ public class Book {
             }
         }
 
+        if (!result && !partialFill) {
+            System.out.println("Order " + order + " got no fills");
+        }
+
         return result;
     }
 
-    private boolean insert(Order order, Map<Integer, Order> lookBook) {
+    private void insert(Order order, Map<Integer, Order> lookBook) {
         getSideQueue(order.isSideBuy()).add(order);
         lookBook.put(order.getId(), order);
-        return true;
+        System.out.println(order + " inserted in the book");
     }
 
     private ConcurrentLinkedQueue<Order> getSideQueue(boolean sideBuy) {

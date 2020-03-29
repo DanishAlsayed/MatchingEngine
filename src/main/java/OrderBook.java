@@ -3,31 +3,30 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class OrderBook {
+ class OrderBook {
     private final Map<Double, ConcurrentLinkedQueue<Order>> buyBook;
     private final Map<Double, ConcurrentLinkedQueue<Order>> sellBook;
-    //note: lookBook does not keep track of quantity
     private final Map<Integer, Order> lookBook;
 
-    public Map<Double, ConcurrentLinkedQueue<Order>> getBuyBook() {
+     Map<Double, ConcurrentLinkedQueue<Order>> getBuyBook() {
         return buyBook;
     }
 
-    public Map<Double, ConcurrentLinkedQueue<Order>> getSellBook() {
+     Map<Double, ConcurrentLinkedQueue<Order>> getSellBook() {
         return sellBook;
     }
 
-    public Map<Integer, Order> getLookBook() {
+     Map<Integer, Order> getLookBook() {
         return lookBook;
     }
 
-    public OrderBook() {
+     OrderBook() {
         this.buyBook = new ConcurrentHashMap<>();
         this.sellBook = new ConcurrentHashMap<>();
         this.lookBook = new ConcurrentHashMap<>();
     }
 
-    public boolean fillAndInsert(Order order) {
+     boolean fillAndInsert(Order order) {
         if (getOrder(order.getId()) != null) {
             return false;
         }
@@ -43,7 +42,7 @@ public class OrderBook {
         return insert(order);
     }
 
-    public boolean remove(int id) {
+     boolean remove(int id) {
         Order order = getOrder(id);
         if (order == null) {
             return false;
@@ -67,7 +66,7 @@ public class OrderBook {
         return false;
     }
 
-    public void clear() {
+     void clear() {
         buyBook.clear();
         sellBook.clear();
         lookBook.clear();

@@ -1,57 +1,57 @@
 import java.util.Objects;
 
-public class Order {
+ class Order {
     private int id;
     private int quantity;
     private double price;
     private boolean sideBuy;
     private boolean mktOrder;
 
-    //TODO: add support for market orders, price will be -1
-    public Order(int id, int quantity, double price, boolean sideBuy) {
+     Order(int id, int quantity, double price, boolean sideBuy) {
         validate(id, quantity, price);
         this.id = id;
         this.quantity = quantity;
         this.price = price;
         this.sideBuy = sideBuy;
+        mktOrder = (price == 0);
     }
 
-    public int getId() {
+     boolean isMktOrder() {
+        return mktOrder;
+    }
+
+     int getId() {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getQuantity() {
+     int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(int quantity) {
+     void setQuantity(int quantity) {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
+     double getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+     void setPrice(double price) {
         this.price = price;
     }
 
-    public boolean isSideBuy() {
+     boolean isSideBuy() {
         return sideBuy;
     }
 
-    public void setSideBuy(boolean sideBuy) {
-        this.sideBuy = sideBuy;
-    }
-
     private void validate(int id, int quantity, double price) {
-        //TODO: order id can be -1 for market data stream, for id check for -1 OR > 0
-        if (id <= 0 || quantity <= 0 || price <= 0.0)
-            throw new IllegalArgumentException("Order id, quantity and price must all be positive.");
+        if (quantity <= 0)
+            throw new IllegalArgumentException("Quantity cannot be less than or equal to 0");
+
+        if ((price < 0 || id < 0)) {
+            throw new IllegalArgumentException("Price and id cannot be less than 0. 0 price represents a market order while a 0 id represents orders from other participants in the market");
+        }
+
     }
 
     //TODO: consider comparing only based on id?
@@ -67,12 +67,12 @@ public class Order {
     }
 
     @Override
-    public int hashCode() {
+     public int hashCode() {
         return Objects.hash(getId(), getQuantity(), getPrice(), isSideBuy());
     }
 
     @Override
-    public String toString() {
+     public String toString() {
         return "Order{" +
                 "id=" + id +
                 ", quantity=" + quantity +
