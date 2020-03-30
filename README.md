@@ -2,6 +2,7 @@
 This is a single stock matching engine implementing price/time priority matching algorithm that is meant to be part of an exchange simulator used to test Algorithmic Trading orders. It supports the following types of orders
 - Limit Orders
 - Market Orders
+
 As well as market updates i.e. orders from other participants in the market so that the orders sent to it from our algorithms do not just match against each other thus help in simulating realistic scenarios.
 
 ### Classes & Interfaces
