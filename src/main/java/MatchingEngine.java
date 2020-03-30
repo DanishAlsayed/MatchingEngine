@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-//This class made for testing purposes
 class MatchingEngine {
     static final int PORT = 22000;
     private UnifiedOrderBook orderBook;
@@ -14,7 +13,7 @@ class MatchingEngine {
     private volatile boolean exit = false;
 
     MatchingEngine() {
-        orderBook = new UnifiedOrderBook();
+        this.orderBook = new UnifiedOrderBook();
         clientHandlers = new ArrayList<>();
         pool = Executors.newCachedThreadPool();
     }

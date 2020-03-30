@@ -3,11 +3,11 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-class Book {
+class OrderQueue {
     private ConcurrentLinkedQueue<Order> buyQueue;
     private ConcurrentLinkedQueue<Order> sellQueue;
 
-    Book() {
+    OrderQueue() {
         buyQueue = new ConcurrentLinkedQueue<>();
         sellQueue = new ConcurrentLinkedQueue<>();
     }
@@ -28,7 +28,7 @@ class Book {
         boolean result;
         boolean sideBuy = order.isSideBuy();
         result = fill(order, lookBook, sideBuy ? minPrices : maxPrices);
-        if (!result && !order.isMktOrder()) {
+        if (!result) {
             insert(order, lookBook);
             if (sideBuy)
                 maxPrices.add(order.getPrice());
@@ -83,6 +83,7 @@ class Book {
         Iterator<Order> it = getSideQueue(!order.isSideBuy()).iterator();
         while (it.hasNext()) {
             Order restingOrder = it.next();
+            int restingId = restingOrder.getId();
             int orderQty = order.getQuantity();
             int restingQty = restingOrder.getQuantity();
             int diff = orderQty - restingQty;
@@ -90,7 +91,8 @@ class Book {
                 order.setQuantity(0);
                 int newQty = diff * -1;
                 restingOrder.setQuantity(newQty);
-                lookBook.get(restingOrder.getId()).setQuantity(newQty);
+                if (!UnifiedOrderBook.isMarketUpdate(restingId))
+                    lookBook.get(restingId).setQuantity(newQty);
                 result = true;
                 System.out.println("Order: " + order + " fully filled");
                 System.out.println("restingOrder: " + restingOrder + " partially filled, quantity left:" + restingOrder.getQuantity());
@@ -101,14 +103,16 @@ class Book {
                 System.out.println("order: " + order + " partially filled, quantity left:" + order.getQuantity());
                 priorityQueue.remove(restingOrder.getPrice());
                 it.remove();
-                lookBook.remove(restingOrder.getId());
+                if (!UnifiedOrderBook.isMarketUpdate(restingId))
+                    lookBook.remove(restingId);
                 partialFill = true;
             } else {
                 order.setQuantity(0);
                 System.out.println("orders: " + restingOrder + " and " + order + " fully filled");
                 priorityQueue.remove(restingOrder.getPrice());
                 it.remove();
-                lookBook.remove(restingOrder.getId());
+                if (!UnifiedOrderBook.isMarketUpdate(restingId))
+                    lookBook.remove(restingId);
                 result = true;
                 break;
             }
@@ -123,7 +127,10 @@ class Book {
 
     private void insert(Order order, Map<Integer, Order> lookBook) {
         getSideQueue(order.isSideBuy()).add(order);
-        lookBook.put(order.getId(), order);
+        int id = order.getId();
+        if (!UnifiedOrderBook.isMarketUpdate(id)) {
+            lookBook.put(id, order);
+        }
         System.out.println(order + " inserted in the book");
     }
 

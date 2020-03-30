@@ -1,7 +1,22 @@
 import java.util.Iterator;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
+import static org.junit.Assert.assertEquals;
+
 class TestUtil {
+
+    static void assertOrderBookSize(UnifiedOrderBook orderBook, double price, int buyBook, int sellBook) {
+        requireNonNull(orderBook.getOrderBook());
+        assertEquals(buyBook, orderBook.getOrderBook().get(price).bookSize(true));
+        assertEquals(sellBook, orderBook.getOrderBook().get(price).bookSize(false));
+    }
+
+    static void assertOtherSizes(UnifiedOrderBook orderBook, int minPrices, int maxPrices, int lookBook) {
+        assertEquals(minPrices, orderBook.getMinPrices().size());
+        assertEquals(maxPrices, orderBook.getMaxPrices().size());
+        assertEquals(lookBook, orderBook.getLookBook().size());
+    }
 
     static void printOrderBook(UnifiedOrderBook orderBook) {
         System.out.println("---ORDER BOOK---");
@@ -10,7 +25,7 @@ class TestUtil {
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry) it.next();
             System.out.println(pair.getKey());
-            Book queue = (Book) pair.getValue();
+            OrderQueue queue = (OrderQueue) pair.getValue();
             queue.printBook(true);
         }
 
@@ -19,7 +34,7 @@ class TestUtil {
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry) it.next();
             System.out.println(pair.getKey());
-            Book queue = (Book) pair.getValue();
+            OrderQueue queue = (OrderQueue) pair.getValue();
             queue.printBook(false);
         }
 

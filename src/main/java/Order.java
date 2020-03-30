@@ -5,7 +5,6 @@ import java.util.Objects;
     private int quantity;
     private double price;
     private boolean sideBuy;
-    private boolean mktOrder;
 
      Order(int id, int quantity, double price, boolean sideBuy) {
         validate(id, quantity, price);
@@ -13,11 +12,6 @@ import java.util.Objects;
         this.quantity = quantity;
         this.price = price;
         this.sideBuy = sideBuy;
-        mktOrder = (price == 0);
-    }
-
-     boolean isMktOrder() {
-        return mktOrder;
     }
 
      int getId() {

@@ -1,16 +1,17 @@
-import com.google.common.collect.HashMultimap;
-
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-class UnifiedOrderBook {
+class UnifiedOrderBook implements OrderBook {
+    //Does not keep track of market updates
     private final Map<Integer, Order> lookBook;
-    private final Map<Double, Book> orderBook;
+    private final Map<Double, OrderQueue> orderBook;
     private PriorityQueue<Double> minPrices;
     private PriorityQueue<Double> maxPrices;
     private ReentrantLock lock;
+
+    private final static int MARKET_UPDATE_ID = 0;
 
     UnifiedOrderBook() {
         lookBook = new ConcurrentHashMap<>();
@@ -20,11 +21,12 @@ class UnifiedOrderBook {
         lock = new ReentrantLock(true);
     }
 
-    boolean fillAndInsert(Order order) {
+    @Override
+    public boolean fillAndInsert(Order order) {
         lock.lock();
         try {
             int id = order.getId();
-            if (id != 0 && getOrder(id) != null) {
+            if (id != MARKET_UPDATE_ID && getOrder(id) != null) {
                 System.out.println("Order with id:" + id + " already exists, fillAndInsert failed");
                 return false;
             }
@@ -33,11 +35,11 @@ class UnifiedOrderBook {
                 return false;
             }
 
-            Book queues = orderBook.get(order.getPrice());
+            OrderQueue queues = orderBook.get(order.getPrice());
             if (queues != null) {
                 queues.fillAndInsert(order, lookBook, maxPrices, minPrices);
-            } else if (!order.isMktOrder()) {
-                queues = new Book();
+            } else {
+                queues = new OrderQueue();
                 queues.fillAndInsert(order, lookBook, maxPrices, minPrices);
                 orderBook.put(order.getPrice(), queues);
             }
@@ -50,31 +52,34 @@ class UnifiedOrderBook {
     private boolean setMarketPrice(Order order) {
         lock.lock();
         try {
-            System.out.println("Market order " + order + " will be treated as immediate or cancel i.e. it will be filled as " +
-                    "much as possible, any residual quantity will not be inserted in the book");
+            System.out.println("Market order " + order + " will be given a price of the fartouch and any residual quantity will be inserted in the queue at that price.");
             if (order.isSideBuy() && !minPrices.isEmpty()) {
-                order.setPrice(minPrices.poll());
+                order.setPrice(minPrices.peek());
                 return true;
             } else if (!order.isSideBuy() && !maxPrices.isEmpty()) {
-                order.setPrice(maxPrices.poll());
+                order.setPrice(maxPrices.peek());
                 return true;
             }
-            System.out.println("No corresponding limit order to match " + order + " against. This order will be not be entertained.");
+            System.out.println("No limit order to match market " + order + " against. This order will be not be entertained.");
             return false;
         } finally {
             lock.unlock();
         }
     }
 
-    boolean cancel(int id) {
+    @Override
+    public boolean cancel(int id) {
         lock.lock();
+        if (getOrder(id) == null) {
+            return false;
+        }
         try {
             Order order = getOrder(id);
             if (order == null) {
                 System.out.println("Order with id " + id + " not found, cancellation failed.");
                 return false;
             }
-            Book queues = orderBook.get(order.getPrice());
+            OrderQueue queues = orderBook.get(order.getPrice());
             if (queues != null) {
                 if (order.isSideBuy()) {
                     queues.remove(order, lookBook, maxPrices);
@@ -89,10 +94,14 @@ class UnifiedOrderBook {
         }
     }
 
-    boolean amend(Amend amend) {
+    @Override
+    public boolean amend(Amend amend) {
         lock.lock();
         try {
             int id = amend.getId();
+            if (getOrder(id) == null) {
+                return false;
+            }
             Order order = getOrder(id);
             if (order == null) {
                 System.out.println("Order with id " + id + " not found, amend failed.");
@@ -121,11 +130,17 @@ class UnifiedOrderBook {
         }
     }
 
+    static boolean isMarketUpdate(int id) {
+        return id == MARKET_UPDATE_ID;
+    }
+
     private Order getOrder(int id) {
+        if (id == MARKET_UPDATE_ID)
+            return null;
         return lookBook.get(id);
     }
 
-    Map<Double, Book> getOrderBook() {
+    Map<Double, OrderQueue> getOrderBook() {
         return orderBook;
     }
 
