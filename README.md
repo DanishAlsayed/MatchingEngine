@@ -39,7 +39,7 @@ A runnable object that handles requests received.
 5. Actions taken on an order are printed in the console to help understand the code flow and the decisions made.
 6. The order book is thread-safe.
 7. a lookbook is maintained to check if an order with a certain id exists, used to verify that validity of amends and cancels received as well as the uniqueness of order ids. It does not keep track of orders in market udpates.
-8. A priority heap is maintained for bids and one for asks to pull the current fartouch to price market orders.
+8. A priority queue is maintained for bids and one for asks to pull the current fartouch to price market orders.
 
 ### Dependencies
 - Maven
