@@ -13,7 +13,6 @@ class MessageParser {
     private final char COLON = ':';
     private final char BUY = '1';
     private final char SELL = '0';
-    private final char MARKET_DELIM = '|';
     private final char COMMA = ',';
     private final int MESSAGE_INDEX = 2;
     private final int MARKET_BOOK_DEPTH = 5;
